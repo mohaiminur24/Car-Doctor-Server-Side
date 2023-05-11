@@ -30,6 +30,7 @@ async function run() {
     await client.connect();
 
     const services = client.db("CarDoctor").collection("services");
+    const checkOut = client.db("CarDoctor").collection("CheckOut");
 
     app.get("/services", async(req, res)=>{
         const query = {};
@@ -38,6 +39,32 @@ async function run() {
         }
         const result = await services.find(query,option).toArray();
         res.send(result);
+    });
+
+    app.get("/service/:id", async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await services.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/services",async(req,res)=>{
+      const service = req.body;
+      const result = await services.insertOne(service);
+      res.send(result);
+    });
+
+    app.post("/checkout",async(req,res)=>{
+      const checkout = req.body;
+      const result = await checkOut.insertOne(checkout);
+      res.send(result);
+    });
+
+    app.delete("/servicedelete/:id", async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await services.deleteOne(query);
+      res.send(result);
     });
 
 

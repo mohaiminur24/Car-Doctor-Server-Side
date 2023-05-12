@@ -67,6 +67,35 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/checkoutService/:email",async(req,res)=>{
+      const email = req.params.email;
+      const query = {email: email};
+      const result = await checkOut.find(query).toArray();
+      res.send(result);
+      
+    });
+
+    app.delete("/checkout/:id", async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await checkOut.deleteOne(query);
+        res.send(result);
+    });
+
+
+    app.put("/checkout/:id", async(req, res)=>{
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)};
+        const update = { 
+          $set:{
+            confirm:true
+          }
+        };
+
+        const result = await checkOut.updateOne(query,update);
+        res.send(result);
+    })
+
 
 
     // Send a ping to confirm a successful connection
@@ -78,6 +107,8 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+
 
 app.get("/",(req, res)=>{
     res.send("Service is runnig well!");

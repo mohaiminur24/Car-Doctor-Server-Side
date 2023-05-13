@@ -1,14 +1,13 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require("express");
 require('dotenv').config()
+const jwt = require("jsonwebtoken");
 const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
-
-
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.85env82.mongodb.net/?retryWrites=true&w=majority`;
@@ -23,6 +22,23 @@ const client = new MongoClient(uri, {
   }
 });
 
+// jwt verify function is here
+const verifyJwt =(req, res, next)=>{
+  if(!req.headers.authtoken){
+      return res.send({error:true, message: "unothorized access!"});
+  };
+  const Token = (req.headers.authtoken).split(" ")[1];
+  jwt.verify(Token, process.env.ACCESS_TOKEN_SECRECT, (error,decoded)=>{
+    if(error){
+      res.send({error:true, message:"unothorized access"});
+    };
+    req.decoded = decoded;
+    next();
+  });
+  
+
+};
+
 
 async function run() {
   try {
@@ -31,6 +47,13 @@ async function run() {
 
     const services = client.db("CarDoctor").collection("services");
     const checkOut = client.db("CarDoctor").collection("CheckOut");
+
+    // create jwt token
+    app.post("/jwt", (req, res)=>{
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRECT,{expiresIn: "1h"})
+      res.send({token});
+    });
 
     app.get("/services", async(req, res)=>{
         const query = {};
@@ -67,11 +90,18 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/checkoutService/:email",async(req,res)=>{
+    app.get("/checkoutService/:email",verifyJwt, async(req,res)=>{
       const email = req.params.email;
-      const query = {email: email};
-      const result = await checkOut.find(query).toArray();
-      res.send(result);
+      const tokenEmail = req.decoded.email;
+      if(email === tokenEmail){
+        console.log(tokenEmail);
+        const query = {email: email};
+        const result = await checkOut.find(query).toArray();
+        res.send(result);
+      }else{
+        res.send({error:true, message:"forbidden user"})
+      };
+      
       
     });
 

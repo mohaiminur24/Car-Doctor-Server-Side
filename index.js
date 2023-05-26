@@ -43,17 +43,13 @@ const verifyJwt =(req, res, next)=>{
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const services = client.db("CarDoctor").collection("services");
     const checkOut = client.db("CarDoctor").collection("CheckOut");
 
     // create jwt token
-    app.post("/jwt", (req, res)=>{
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRECT,{expiresIn: "1h"})
-      res.send({token});
-    });
+    
 
     app.get("/services", async(req, res)=>{
         const query = {};
@@ -69,6 +65,21 @@ async function run() {
       const query = {_id: new ObjectId(id)};
       const result = await services.findOne(query);
       res.send(result);
+    });
+
+    app.get("/checkoutService/:email",verifyJwt, async(req,res)=>{
+      const email = req.params.email;
+      const tokenEmail = req.decoded.email;
+      if(email === tokenEmail){
+        console.log(tokenEmail);
+        const query = {email: email};
+        const result = await checkOut.find(query).toArray();
+        res.send(result);
+      }else{
+        res.send({error:true, message:"forbidden user"})
+      };
+      
+      
     });
 
     app.post("/services",async(req,res)=>{
@@ -90,21 +101,6 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/checkoutService/:email",verifyJwt, async(req,res)=>{
-      const email = req.params.email;
-      const tokenEmail = req.decoded.email;
-      if(email === tokenEmail){
-        console.log(tokenEmail);
-        const query = {email: email};
-        const result = await checkOut.find(query).toArray();
-        res.send(result);
-      }else{
-        res.send({error:true, message:"forbidden user"})
-      };
-      
-      
-    });
-
     app.delete("/checkout/:id", async(req,res)=>{
         const id = req.params.id;
         const query = {_id: new ObjectId(id)}
@@ -124,7 +120,13 @@ async function run() {
 
         const result = await checkOut.updateOne(query,update);
         res.send(result);
-    })
+    });
+
+    app.post("/jwt", (req, res)=>{
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRECT,{expiresIn: "1h"})
+      res.send({token});
+    });
 
 
 
